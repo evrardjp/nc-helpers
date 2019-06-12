@@ -35,11 +35,16 @@ function get_openrc {
   echo "export OS_IDENTITY_API_VERSION=3"
 }
 
-
-function get_config {
-  NS=$1
-  SECRET=$2
-  kubectl get -n "$NS" secrets "${SECRET}" -o go-template --template='{{ range $k, $v := .data }}--- {{$k}} ---{{"\n"}}{{ $v | base64decode }}{{"\n"}}{{end}}'
+function run_os_command {
+  SERVICE=$1
+  USER=$2
+  COMMAND=${@:3}
+  TEMPLATE=$(mktemp)
+  echo '{{ range $k, $v := .data }}-e {{$k}}={{ $v | base64decode}} {{end}}' > ${TEMPLATE}
+  OPENRC=$(kubectl get -n openstack secrets "${SERVICE}-keystone-${USER}" -o go-template-file=${TEMPLATE})
+  rm -f ${TEMPLATE}
+  HEAT_IMAGE=$(kubectl -n openstack get jobs keystone-db-init -o jsonpath='{$.spec.template.spec.containers[0].image}')
+  docker run --rm -e OS_IDENTITY_API_VERSION=3 ${OPENRC} -v /tmp:/tmp ${HEAT_IMAGE} ${COMMAND}
 }
 
 function job_rerun {

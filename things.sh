@@ -60,6 +60,7 @@ function job_rerun {
 
 function get_ceph_creds {
   NS=$1
+  mkdir -p /etc/ceph
   MON_POD=$(kubectl -n "$NS" get pods -l application=ceph,component=mon -o name | awk -F '/' '{ print $2; exit }')
   for FILE in /etc/ceph/ceph.conf /etc/ceph/ceph.client.admin.keyring; do
     kubectl exec -it -n "$NS" "$MON_POD" -- cat "$FILE" > $FILE

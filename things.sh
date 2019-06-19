@@ -66,3 +66,16 @@ function get_ceph_creds {
     kubectl exec -it -n "$NS" "$MON_POD" -- cat "$FILE" > $FILE
   done
 }
+
+function get_pvc_info {
+  #USE: get_pvc_info ceph openstack mysql-data-mariadb-server-0
+  CEPH_CLUSTER_NAMESPACE=$1
+  PVC_NAMESPACE=$2
+  PVC_NAME=$3
+  PV_ID=$(kubectl get -n $PVC_NAMESPACE pvc $PVC_NAME -o 'go-template={{.spec.volumeName}}')
+  RBD_VOLUME=$(kubectl get pv $PV_ID -o 'go-template={{.spec.rbd.image}}')
+  MON_POD=$(kubectl -n "$CEPH_CLUSTER_NAMESPACE" get pods -l application=ceph,component=mon -o name | awk -F '/' '{ print $2; exit }')
+  kubectl exec -n "$CEPH_CLUSTER_NAMESPACE" "$MON_POD" -- rbd info $RBD_VOLUME
+  kubectl exec -n "$CEPH_CLUSTER_NAMESPACE" "$MON_POD" -- rbd status $RBD_VOLUME
+  kubectl exec -n "$CEPH_CLUSTER_NAMESPACE" "$MON_POD" -- rbd disk-usage $RBD_VOLUME
+}

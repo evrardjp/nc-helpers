@@ -54,8 +54,8 @@ function job_rerun {
   kubectl get -n "$NS" jobs "$JOB" -o=json > "$JOB_JSON_ORIGINAL"
   JOB_JSON_RE_RUN=$(mktemp --suffix=".json")
   jq 'del(.status) | del(.metadata.creationTimestamp) | del(.metadata.labels."controller-uid") | del(.metadata.resourceVersion) | del(.metadata.selfLink) | del(.metadata.uid) | del(.spec.selector) | del(.spec.template.metadata.creationTimestamp) | del(.spec.template.metadata.labels."controller-uid" )' "$JOB_JSON_ORIGINAL" > "$JOB_JSON_RE_RUN"
-  kubectl delete -f "$JOB_JSON_ORIGINAL"
-  kubectl create -f "$JOB_JSON_RE_RUN"
+  cat "$JOB_JSON_ORIGINAL" | kubectl delete -f -
+  cat "$JOB_JSON_ORIGINAL" | kubectl create -f -
 }
 
 function get_ceph_creds {

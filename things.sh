@@ -50,12 +50,16 @@ function run_os_command {
 function job_rerun {
   NS=$1
   JOB=$2
-  JOB_JSON_ORIGINAL=$(mktemp --suffix=".json")
-  kubectl get -n "$NS" jobs "$JOB" -o=json > "$JOB_JSON_ORIGINAL"
-  JOB_JSON_RE_RUN=$(mktemp --suffix=".json")
-  jq 'del(.status) | del(.metadata.creationTimestamp) | del(.metadata.labels."controller-uid") | del(.metadata.resourceVersion) | del(.metadata.selfLink) | del(.metadata.uid) | del(.spec.selector) | del(.spec.template.metadata.creationTimestamp) | del(.spec.template.metadata.labels."controller-uid" )' "$JOB_JSON_ORIGINAL" > "$JOB_JSON_RE_RUN"
-  cat "$JOB_JSON_ORIGINAL" | kubectl delete -f -
-  cat "$JOB_JSON_RE_RUN" | kubectl create -f -
+  if command -v jq; then
+    JOB_JSON_ORIGINAL=$(mktemp --suffix=".json")
+    kubectl get -n "$NS" jobs "$JOB" -o=json > "$JOB_JSON_ORIGINAL"
+    JOB_JSON_RE_RUN=$(mktemp --suffix=".json")
+    jq 'del(.status) | del(.metadata.creationTimestamp) | del(.metadata.labels."controller-uid") | del(.metadata.resourceVersion) | del(.metadata.selfLink) | del(.metadata.uid) | del(.spec.selector) | del(.spec.template.metadata.creationTimestamp) | del(.spec.template.metadata.labels."controller-uid" )' "$JOB_JSON_ORIGINAL" > "$JOB_JSON_RE_RUN"
+    cat "$JOB_JSON_ORIGINAL" | kubectl delete -f -
+    cat "$JOB_JSON_RE_RUN" | kubectl create -f -
+  else
+    echo "JQ not installed"
+  fi
 }
 
 function get_ceph_creds {

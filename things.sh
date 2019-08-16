@@ -83,3 +83,12 @@ function get_pvc_info {
   kubectl exec -n "$CEPH_CLUSTER_NAMESPACE" "$MON_POD" -- rbd status $RBD_VOLUME
   kubectl exec -n "$CEPH_CLUSTER_NAMESPACE" "$MON_POD" -- rbd disk-usage $RBD_VOLUME
 }
+
+function el_status {
+  kubectl exec -n osh-infra $(kubectl get pods \
+   --namespace=osh-infra \
+   --selector="application=elasticsearch" \
+   --selector="component=client" \
+   --no-headers | awk '{ print $1; exit }') \
+   -c elasticsearch-client -- curl -sSL localhost:9200/_cat/health?v
+ }

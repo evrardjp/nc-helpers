@@ -44,7 +44,7 @@ function run_os_command {
   OPENRC=$(kubectl get -n openstack secrets "${SERVICE}-keystone-${USER}" -o go-template-file=${TEMPLATE})
   rm -f ${TEMPLATE}
   HEAT_IMAGE=$(kubectl -n openstack get jobs keystone-db-init -o jsonpath='{$.spec.template.spec.containers[0].image}')
-  docker run --rm -e OS_IDENTITY_API_VERSION=3 ${OPENRC} -v /tmp:/tmp ${HEAT_IMAGE} ${COMMAND}
+  docker run --net=host --rm -e OS_IDENTITY_API_VERSION=3 ${OPENRC} -v /tmp:/tmp ${HEAT_IMAGE} ${COMMAND}
 }
 
 function job_rerun {

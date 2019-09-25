@@ -92,3 +92,13 @@ function el_status {
    --no-headers | awk '{ print $1; exit }') \
    -c elasticsearch-client -- curl -sSL localhost:9200/_cat/health?v
  }
+
+function edit_secret_value {
+  # edit_secret_value openstack nova-etc nova.conf
+  NS="$1"
+  SECRET="$2"
+  KEY="$3"
+  kubectl get -n ${NS} secrets ${SECRET} -o "go-template={{ index .data \"${KEY}\" | base64decode }}" > /tmp/${KEY}
+  vi /tmp/${KEY}
+  kubectl -n ${NS} patch secrets ${SECRET} -p "{\"data\": {\"${KEY}\": \"$(base64 -w 0 /tmp/${KEY})\"}}"
+}

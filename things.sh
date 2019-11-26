@@ -36,14 +36,16 @@ function get_openrc {
 }
 
 function run_os_command {
-  SERVICE=$1
-  USER=$2
-  COMMAND=${@:3}
+  # run_os_command openstack keystone admin openstack token issue
+  NS=$1
+  SERVICE=$2
+  USER=$3
+  COMMAND=${@:4}
   TEMPLATE=$(mktemp)
   echo '{{ range $k, $v := .data }}-e {{$k}}={{ $v | base64decode}} {{end}}' > ${TEMPLATE}
-  OPENRC=$(kubectl get -n openstack secrets "${SERVICE}-keystone-${USER}" -o go-template-file=${TEMPLATE})
+  OPENRC=$(kubectl get -n "$NS" secrets "${SERVICE}-keystone-${USER}" -o go-template-file=${TEMPLATE})
   rm -f ${TEMPLATE}
-  HEAT_IMAGE=$(kubectl -n openstack get jobs keystone-db-init -o jsonpath='{$.spec.template.spec.containers[0].image}')
+  HEAT_IMAGE=$(kubectl -n "$NS" get jobs keystone-db-init -o jsonpath='{$.spec.template.spec.containers[0].image}')
   docker run --net=host --rm -e OS_IDENTITY_API_VERSION=3 ${OPENRC} -v /tmp:/tmp ${HEAT_IMAGE} ${COMMAND}
 }
 
@@ -92,6 +94,16 @@ function el_status {
    --no-headers | awk '{ print $1; exit }') \
    -c elasticsearch-client -- curl -sSL localhost:9200/_cat/health?v
  }
+
+function dump_secret_values {
+  # dump_secret_values ucp clcp-ucp-apiserver-webhook-apiserver-webhook-pod-server
+  NS=$1
+  SECRET=$2
+  TEMPLATE=$(mktemp)
+  echo '{{ range $k, $v := .data }}{{$k}}: | {{"\n"}}{{ $v | base64decode }}{{"\n"}}{{end}}' > ${TEMPLATE}
+  kubectl get -n ${NS} secrets "${SECRET}" -o go-template-file=${TEMPLATE}
+  rm -f ${TEMPLATE}
+}
 
 function edit_secret_value {
   # edit_secret_value openstack nova-etc nova.conf
